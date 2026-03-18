@@ -1,0 +1,22 @@
+// CONFIGURAÇÃO DE IDENTIDADE
+const MEU_ID = "player1"; // Mude para player2, player3 em outras pastas
+
+// Coloque aqui todo o código que estava entre as tags <script> 
+// (As funções trocarArma, aplicarDano, atualizarHUD, etc.)
+
+// EXCLUSIVO: Função para ouvir o Painel do Mestre via Firebase
+// (Você precisará colocar as credenciais do seu Firebase aqui depois)
+function ouvirMestre() {
+    const dbRef = firebase.database().ref(`jogadores/${MEU_ID}/comando`);
+    dbRef.on('value', (snapshot) => {
+        const comando = snapshot.val();
+        if (comando) {
+            document.getElementById("danoInput").value = comando;
+            aplicarDano(); // Executa o dano automaticamente!
+            dbRef.set(null); // Limpa o comando para não repetir
+        }
+    });
+}
+
+// Inicia a escuta
+ouvirMestre();
