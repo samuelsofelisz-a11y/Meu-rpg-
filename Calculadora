@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>HUD Unificado — Arma, Vida, Perícias, Estimulantes e Debuffs</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;height:100vh;width:100vw;overflow:hidden}
+
+/* ===== COLUNAS ===== */
+.coluna{flex:1;border-left:2px solid #00fff2;display:flex;flex-direction:column;align-items:center;position:relative}
+.coluna:first-child{border-left:none}
+.titulo{font-size:2em;font-weight:bold;color:#00fff2;text-shadow:0 0 8px #00fff2;position:absolute;top:20px;text-align:center;letter-spacing:2px;z-index:10}
+
+/* ===== GRID / ARMAS (layout preservado) ===== */
+.grid-fuzil{position:absolute;top:193px;left:43%;transform:translateX(-50%);width:740px;height:398px;background:rgba(0,255,255,.05);border:2px solid #00fff2;border-radius:12px;display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 0 20px #00fff266;transition:all .3s ease}
+.grid-azul{border-color:#00fff2;box-shadow:0 0 20px #00fff266,0 0 30px #00fff244 inset}
+.grid-laranja{border-color:#ff7b00;box-shadow:0 0 25px #ff7b0077,0 0 40px #ff7b0044 inset}
+.fuzil-inner img{position:absolute;transition:transform .25s ease,opacity .25s ease,filter .3s ease;pointer-events:auto;cursor:pointer}
+#fuzilImg{top:54%;left:50%;width:88%;transform:translate(-50%,-50%) scale(1);filter:drop-shadow(0 0 12px #00fff2cc)}
+#fuzilImg:hover{transform:translate(-50%,-50%) scale(1.1)}
+#pistolaImg{top:53%;left:55%;width:55%;transform:translate(-50%,-50%) scale(1);opacity:0;pointer-events:none;filter:drop-shadow(0 0 12px #00fff2cc)}
+#pistolaImg.visivel{opacity:1;pointer-events:auto}
+#pistolaImg:hover{transform:translate(-50%,-50%) scale(1.1)}
+.botao-troca{position:absolute;top:-42px;right:-62px;width:60px;height:60px;background:none;border:none;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+.botao-troca img{width:100%;height:100%;filter:drop-shadow(0 0 10px #00fff2);transition:transform .4s ease}
+.botao-troca .animar{transform:scale(1.3) rotate(360deg)}
+.municao-display{position:absolute;top:93px;left:57%;transform:translateX(-50%);z-index:15;text-align:center}
+.contador{font-size:2.4em;font-weight:bold;letter-spacing:2px;text-shadow:0 0 10px #00fff2;color:#00fff2;white-space:nowrap}
+.contador.laranja{color:#ff7b00;text-shadow:0 0 10px #ff7b00}
+.contador.inativo{display:none}
+.icone-tipo{position:absolute;top:90px;left:67%;width:100px;height:100px;cursor:pointer;transition:transform .2s ease,filter .3s ease;z-index:15}
+.icone-tipo:hover{transform:scale(1.1)}
+.icone-azul{filter:drop-shadow(0 0 18px #00fff2cc) brightness(1.3)}
+.icone-laranja{filter:drop-shadow(0 0 18px #ff7b00cc) brightness(1.5)}
+#nomeMunicao{position:absolute;top:68px;left:67%;transform:translateX(-50%);font-size:1.05em;font-weight:bold;letter-spacing:.5px;color:#00fff2;text-shadow:0 0 8px #00fff2;z-index:16;user-select:none;pointer-events:none}
+#nomeMunicao.laranja{color:#ff7b00;text-shadow:0 0 8px #ff7b00}
+.botao-recarregar{position:absolute;top:148px;left:57%;transform:translateX(-50%);background:transparent;color:#00fff2;border:3px solid #00fff2;padding:8px 23px;border-radius:8px;font-weight:bold;cursor:pointer;transition:.2s;text-transform:uppercase;z-index:15}
+.botao-recarregar:hover{background:#00fff2;color:#000;box-shadow:0 0 10px #00fff2}
+
+/* Granadas */
+#nomeGranada{position:absolute;top:59px;left:36%;transform:translateX(-50%);color:#00fff2;font-size:1.2em;font-weight:bold;text-shadow:0 0 10px #00fff2;z-index:16}
+#iconeGranada{position:absolute;top:86px;left:30%;width:107px;height:107px;cursor:pointer;filter:drop-shadow(0 0 10px #00fff2);transition:transform .2s ease;z-index:16}
+#iconeGranada:hover{transform:scale(1.1)}
+#contadorGranada{position:absolute;top:95px;left:23%;color:#00fff2;font-size:2.7em;font-weight:bold;text-shadow:0 0 10px #00fff2;z-index:16}
+#botaoUsarGranada{position:absolute;top:150px;left:24%;transform:translateX(-50%);background:transparent;color:#00fff2;border:3px solid #00fff2;padding:8px 20px;border-radius:8px;font-weight:bold;text-transform:uppercase;cursor:pointer;z-index:16;transition:.2s}
+#botaoUsarGranada:hover{background:#00fff2;color:#000;box-shadow:0 0 10px #00fff2}
+
+/* Caixas de disparo */
+.caixas-inferiores{position:absolute;top:calc(200px + 398px + 8px);left:43%;transform:translateX(-50%);display:flex;gap:20px;z-index:6}
+.caixa{width:90px;height:90px;border:2px solid #00fff2;border-radius:10px;background:rgba(0,255,255,.05);box-shadow:0 0 8px #00fff266;display:flex;align-items:center;justify-content:center;color:#00fff2;font-size:2em;font-weight:bold;cursor:pointer;transition:.2s;user-select:none}
+.caixa:hover{transform:scale(1.08);box-shadow:0 0 15px #00fff2}
+.caixa.ativo{box-shadow:0 0 18px #00fff2,0 0 35px #00fff233 inset;color:#00fff2}
+.caixa.bloqueado{border-color:rgba(255,255,255,.08);color:rgba(255,255,255,.12);box-shadow:none;cursor:not-allowed;background:rgba(255,255,255,.01)}
+.caixa .x{font-size:2em;color:rgba(255,255,255,.18)}
+
+/* Divisão / Perícias título */
+.linha-divisao{position:absolute;top:calc(200px + 398px + 8px + 90px + 12px);left:43%;transform:translateX(-50%);width:1000px;height:3px;background:linear-gradient(90deg,transparent,#00fff2,transparent);box-shadow:0 0 15px #00fff266}
+.titulo-pericia{position:absolute;top:calc(200px + 398px + 8px + 90px + 12px + 20px);left:43%;transform:translateX(-50%);font-size:1.8em;font-weight:bold;color:#00fff2;text-shadow:0 0 8px #00fff2;letter-spacing:2px;z-index:8}
+
+/* ===== PERÍCIAS (lista detalhada) ===== */
+.pericia-container{position:absolute;top:calc(200px + 398px + 8px + 90px + 12px + 60px);left:43%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(3,220px);grid-auto-rows:auto;gap:25px 60px;z-index:8}
+.coluna-pericia{border:2px solid #00fff2;border-radius:12px;background:rgba(0,255,255,.05);box-shadow:0 0 10px #00fff266;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:10px 15px;color:#00fff2;font-weight:bold;transition:.2s;width:220px;min-height:180px;cursor:default}
+.coluna-pericia:hover{transform:scale(1.05);box-shadow:0 0 15px #00fff2}
+.coluna-pericia .atributo{font-size:1.2em;margin-bottom:8px;text-shadow:0 0 6px #00fff2;text-transform:uppercase;text-align:left;width:100%;padding-left:5px}
+.coluna-pericia ul{list-style:none;padding-left:10px;margin:0;width:100%}
+.coluna-pericia li{font-size:.95em;font-weight:normal;margin:3px 0;color:#b8ffff;text-align:left}
+.mod{color:#00ff66;font-weight:bold;text-shadow:0 0 6px #00ff66;margin-left:6px}
+
+/* Box de atributos clicável */
+#boxAtributos{cursor:pointer}
+#boxAtributos:hover{transform:scale(1.05);box-shadow:0 0 18px #00fff2}
+
+/* ===================== COLUNA: VIDA ===================== */
+.vida-frame{position:absolute;top:10px;left:calc(49% - 500px);width:800px;height:420px;background-image:url('https://i.imgur.com/y2moow7.png');background-size:contain;background-repeat:no-repeat;background-position:center;pointer-events:none;z-index:5;transition:filter .3s ease}
+.placas-contador{position:absolute;top:70px;left:47%;transform:translateX(-50%);display:flex;gap:5px;z-index:1000;pointer-events:none}
+.placas-contador img{width:45px;height:45px;opacity:0;transform:scale(.8);transition:all .3s ease;filter:drop-shadow(0 0 8px #000)}
+.placas-contador img.ativo{opacity:1;transform:scale(1);animation:brilhoEscudo 1s infinite alternate}
+@keyframes brilhoEscudo{from{filter:drop-shadow(0 0 10px #ff8c00) brightness(1.1)}to{filter:drop-shadow(0 0 25px #ffaa33) brightness(1.6)}}
+.efeito-vermelho{animation:pulsarVermelho .6s infinite alternate}
+.efeito-verde{animation:pulsarVerde .6s infinite alternate}
+@keyframes pulsarVermelho{from{filter:drop-shadow(0 0 10px #ff0000) brightness(1)}to{filter:drop-shadow(0 0 25px #ff4d4d) brightness(1.4)}}
+@keyframes pulsarVerde{from{filter:drop-shadow(0 0 10px #00ff66) brightness(1)}to{filter:drop-shadow(0 0 25px #00ffcc) brightness(1.5)}}
+.status-icons{position:absolute;top:310px;left:38%;transform:translateX(-50%);display:flex;gap:7px;z-index:1000;pointer-events:none}
+.status-icons img{width:85px;height:85px;opacity:0;transform:scale(.7);transition:all .4s ease;filter:drop-shadow(0 0 8px #000)}
+.status-icons img.ativo{opacity:1;transform:scale(1)}
+#iconSangramento.ativo{animation:brilhoVermelho .8s infinite alternate}
+#iconVeneno.ativo{animation:brilhoVerde .8s infinite alternate}
+#iconLesao.ativo{animation:lesaoPulse .9s infinite alternate}
+@keyframes lesaoPulse{from{filter:drop-shadow(0 0 10px #ffd54d) brightness(1.0)}to{filter:drop-shadow(0 0 26px #ffea82) brightness(1.3)}}
+
+/* Barra de Vida */
+.vida-barra{position:absolute;top:188px;left:calc(49% - 154px);width:379px;height:60px;border-radius:4px;overflow:hidden;z-index:6;background:#111}
+.vida-preenchimento{height:100%;background:linear-gradient(90deg,#00ffff,#00b3ff);border-radius:4px;transition:width .3s ease;position:absolute;left:0;top:0;z-index:7}
+.vida-extra{height:100%;background:linear-gradient(90deg,#ffb347,#ff7b00);border-radius:0 4px 4px 0;transition:all .3s ease;position:absolute;top:0;z-index:8}
+.vida-contador{position:absolute;top:260px;left:calc(50% - 50px);color:#00fff2;font-size:1.5em;text-shadow:0 0 8px #00fff2;font-weight:bold;z-index:10}
+
+/* Painel Dano */
+.painel-dano{position:absolute;top:195px;left:calc(47% + 260px);display:flex;align-items:center;gap:10px;z-index:20}
+.painel-dano input{width:220px;height:50px;border:2px solid #00fff2;border-radius:6px;background:#111;color:#00fff2;text-align:center;font-size:1em;outline:none}
+.painel-dano button{background:#00fff2;border:none;color:#000;font-weight:bold;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.2s}
+.painel-dano button:hover{background:#00ff99;transform:scale(1.1)}
+
+/* Atributos rápidos */
+.armadura,.sanidade,.resistencia{position:absolute;display:flex;align-items:center;gap:6px;z-index:25}
+.armadura{top:115px;left:calc(50% + 224px)}
+.sanidade{top:115px;left:calc(50% + 320px)}
+.resistencia{top:45px;left:calc(50% + 225px)}
+.armadura img,.sanidade img,.resistencia img{width:55px;height:55px}
+.armadura span,.sanidade span,.resistencia span{color:#00fff2;font-weight:bold;font-size:1.2em}
+.botoes-sani{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sanidade button{background:transparent;border:none;color:#00fff2;font-size:1.2em;cursor:pointer;transition:transform .1s ease}
+.sanidade button:hover{transform:scale(1.3);color:#00ff99}
+
+/* Grade de Itens (cura/spray/placa + ESTIMULANTES no 4º grid) */
+.itens{position:absolute;top:480px;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:repeat(2,300px);grid-template-rows:repeat(2,300px);gap:170px;z-index:30}
+.item{width:300px;height:300px;background:rgba(0,255,255,.05);border:2px solid #00fff2;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative}
+.item-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;position:relative}
+.item img{width:90%;height:90%;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1);transition:transform .25s ease,opacity .25s ease}
+.item-inner:hover img{transform:translate(-50%,-50%) scale(1.15);z-index:10}
+
+/* 4º grid: seletor vertical para Estimulantes */
+#item-estims .seletores-verticais{position:absolute;left:-78px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:100}
+#item-estims .seletor{width:70px;height:70px;background:#111;border:2px solid #00fff2;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#00fff2;font-weight:bold;font-size:1.5em;cursor:pointer;transition:.2s}
+#item-estims .seletor:hover{background:#00fff2;color:#000}
+#item-estims .seletor.ativo{background:#00fff2;color:#000;box-shadow:0 0 15px #00fff2}
+#item-estims img{opacity:0;pointer-events:none}
+#item-estims img.ativo{opacity:1;pointer-events:auto;filter:drop-shadow(0 0 18px #00fff2) brightness(1.3)}
+
+/* Popups (estimulantes + cura/spray/placa + atributos) */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);justify-content:center;align-items:center;z-index:999}
+.overlay.ativo{display:flex}
+.popup{background:#111;border:2px solid #00fff2;border-radius:10px;padding:22px 24px;width:440px;max-width:92vw;color:#00fff2;text-align:center;box-shadow:0 0 18px #00fff266}
+.popup h2{margin:0 0 8px;text-shadow:0 0 10px currentColor}
+.popup p{margin:6px 0;color:#b8ffff}
+.popup .botoes{margin-top:14px;display:flex;gap:12px;justify-content:center}
+.popup button{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-weight:bold;transition:.2s}
+.popup .usar{background:#00fff2;color:#000}
+.popup .fechar{background:#111;color:#00fff2;border:2px solid #00fff2}
+.popup .usar:hover{background:#00ff99}
+.popup .fechar:hover{background:#00fff2;color:#000}
+.cooldown{font-size:.9em;color:#8ff;opacity:.85;margin-top:8px}
+
+/* Form de atributos no popup */
+#formAtributos{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
+#formAtributos label{display:flex;justify-content:space-between;align-items:center;font-size:.95em}
+#formAtributos input{width:70px;background:#000;border:1px solid #00fff2;border-radius:4px;color:#00fff2;text-align:center;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- ===================== COLUNA ARMA ===================== -->
+<div class="coluna" id="arma">
+  <div class="titulo">ARMA</div>
+
+  <div class="municao-display">
+    <div id="contadorFuzilNormal" class="contador">30 / 90</div>
+    <div id="contadorFuzilAB" class="contador laranja inativo">25 / 75</div>
+    <div id="contadorPistola" class="contador inativo">12 / 36</div>
+  </div>
+
+  <div id="nomeMunicao">MUNIÇÃO BASE</div>
+  <img id="iconeTipo" class="icone-tipo icone-azul" src="https://i.imgur.com/yBeSBbD.png" alt="Tipo de munição" onclick="trocarMunicao()">
+  <button class="botao-recarregar" onclick="recarregar()">RECARREGAR</button>
+
+  <div id="nomeGranada">GRANADA</div>
+  <img id="iconeGranada" src="https://i.imgur.com/YNr8ppm.png" alt="Granada" onclick="trocarGranada()">
+  <div id="contadorGranada">3</div>
+  <button id="botaoUsarGranada" onclick="usarGranada()">USAR</button>
+
+  <div class="grid-fuzil grid-azul" id="gridFuzil">
+    <div class="fuzil-inner">
+      <img id="fuzilImg" src="https://i.imgur.com/nRsouNy.png" alt="Fuzil">
+      <img id="pistolaImg" src="https://i.imgur.com/KY3TIlI.png" alt="Pistola">
+    </div>
+    <button class="botao-troca" onclick="trocarArma()">
+      <img id="imgTroca" src="https://i.imgur.com/LehbrQR.png" alt="Trocar Arma">
+    </button>
+  </div>
+
+  <div class="caixas-inferiores" id="botoesTiro">
+    <div class="caixa" data-index="1">1</div>
+    <div class="caixa" data-index="2">2</div>
+    <div class="caixa" data-index="3">3</div>
+    <div class="caixa" data-index="4">4</div>
+    <div class="caixa" data-index="5">5</div>
+  </div>
+
+  <div class="linha-divisao"></div>
+  <div class="titulo-pericia">PERÍCIAS</div>
+
+  <!-- ===================== PERÍCIAS (5 ATRIBUTOS + ATRIBUTOS BOX) ===================== -->
+  <div class="pericia-container" id="pericias">
+    <div class="coluna-pericia" data-atrib="FORÇA">
+      <div class="atributo">FORÇA</div>
+      <ul>
+        <li>Atletismo <span class="mod">+1</span></li>
+        <li>Briga <span class="mod">+1</span></li>
+        <li>Armas Brancas <span class="mod">+1</span></li>
+        <li>Armas Pesadas <span class="mod">+1</span></li>
+        <li>Contra-ataque <span class="mod">+1</span></li>
+      </ul>
+    </div>
+
+    <div class="coluna-pericia" data-atrib="CONSTITUIÇÃO">
+      <div class="atributo">CONSTITUIÇÃO</div>
+      <ul>
+        <li>Resistência Física <span class="mod">+1</span></li>
+        <li>Tolerância à Dor <span class="mod">+1</span></li>
+        <li>Resistência a Toxinas <span class="mod">+1</span></li>
+        <li>Fôlego <span class="mod">+1</span></li>
+        <li>Resistência Psicológica <span class="mod">+1</span></li>
+      </ul>
+    </div>
+
+    <div class="coluna-pericia" data-atrib="DESTREZA">
+      <div class="atributo">DESTREZA</div>
+      <ul>
+        <li>Acrobacia <span class="mod">+1</span></li>
+        <li>Pontaria <span class="mod">+1</span></li>
+        <li>Furtividade <span class="mod">+1</span></li>
+        <li>Ladeagem <span class="mod">+1</span></li>
+        <li>Reflexo <span class="mod">+1</span></li>
+      </ul>
+    </div>
+
+    <div class="coluna-pericia" data-atrib="INTELIGÊNCIA">
+      <div class="atributo">INTELIGÊNCIA</div>
+      <ul>
+        <li>Investigação <span class="mod">+1</span></li>
+        <li>Hacker <span class="mod">+1</span></li>
+        <li>Medicina <span class="mod">+1</span></li>
+        <li>Estratégia <span class="mod">+1</span></li>
+        <li>Engenharia <span class="mod">+1</span></li>
+      </ul>
+    </div>
+
+    <div class="coluna-pericia" data-atrib="PSICOLÓGICO">
+      <div class="atributo">PSICOLÓGICO</div>
+      <ul>
+        <li>Percepção Psicológica <span class="mod">+1</span></li>
+        <li>Percepção <span class="mod">+1</span></li>
+        <li>Blefe <span class="mod">+1</span></li>
+        <li>Vontade <span class="mod">+1</span></li>
+      </ul>
+    </div>
+
+    <!-- NOVO: GRID DE ATRIBUTOS -->
+    <div class="coluna-pericia" id="boxAtributos">
+      <div class="atributo">ATRIBUTOS</div>
+      <ul id="listaAtributos">
+        <!-- preenchido via JS -->
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== COLUNA VIDA ===================== -->
+<div class="coluna" id="vida">
+  <div class="titulo">VIDA</div>
+
+  <div class="vida-frame" id="vidaFrame">
+    <div class="placas-contador">
+      <img id="placaIcon1" src="https://i.imgur.com/n8cgQJU.png" alt="Placa 1">
+      <img id="placaIcon2" src="https://i.imgur.com/n8cgQJU.png" alt="Placa 2">
+    </div>
+  </div>
+
+  <div class="vida-barra">
+    <div class="vida-preenchimento" id="vidaBarra"></div>
+    <div class="vida-extra" id="vidaExtra"></div>
+  </div>
+  <div class="vida-contador" id="vidaContador">HP: 250 / 250</div>
+
+  <div class="status-icons">
+    <img id="iconSangramento" src="https://i.imgur.com/CPcHMYH.png" alt="Sangramento">
+    <img id="iconVeneno"     src="https://i.imgur.com/DiIt9ie.png" alt="Veneno">
+    <img id="iconLesao"      src="https://i.imgur.com/MvAV7lb.png" alt="Lesão">
+  </div>
+
+  <div class="resistencia"><img src="https://i.imgur.com/Q1uRV7U.png" alt="Resistência"><span id="valorResistencia">5%</span></div>
+  <div class="armadura"><img src="https://i.imgur.com/swwVkhi.png" alt="Armadura"><span id="valorArmadura">50</span></div>
+  <div class="sanidade">
+    <img src="https://i.imgur.com/bkVX5N8.png" alt="Sanidade">
+    <span id="valorSanidade">30</span>
+    <div class="botoes-sani">
+      <button onclick="alterarSanidade(1)">▲</button>
+      <button onclick="alterarSanidade(-1)">▼</button>
+    </div>
+  </div>
+
+  <!-- Grade de itens: Cura / Spray / Placa / ESTIMULANTES -->
+  <div class="itens" id="gradeItens">
+    <div class="item" id="grid-cura"><div class="item-inner"><img src="https://i.imgur.com/r5cyOuh.png" alt="Cura Avançada"></div></div>
+    <div class="item" id="grid-spray"><div class="item-inner"><img src="https://i.imgur.com/JDtsZKU.png" alt="Quick Spray"></div></div>
+    <div class="item" id="grid-placa"><div class="item-inner"><img src="https://i.imgur.com/udi7MQc.png" alt="Placa Balística"></div></div>
+
+    <!-- 4º GRID: Estimulantes com seletor vertical -->
+    <div class="item" id="item-estims" title="Estimulantes">
+      <div class="seletores-verticais">
+        <div class="seletor ativo" data-img="1">1</div>
+        <div class="seletor" data-img="2">2</div>
+        <div class="seletor" data-img="3">3</div>
+      </div>
+      <div class="item-inner" id="stimInner">
+        <img id="stim1" src="https://i.imgur.com/4AZzyLr.png" alt="AdrenaBoost">
+        <img id="stim2" src="https://i.imgur.com/jwNtLPf.png" alt="Iron Pulse">
+        <img id="stim3" src="https://i.imgur.com/RL7ZzHq.png" alt="MidSpark">
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel de dano -->
+  <div class="painel-dano">
+    <input type="text" id="danoInput" placeholder="Dano ou S/V/L + número (ex: S80, V40, L10, 55)">
+    <button id="btnDano">OK</button>
+  </div>
+</div>
+
+<!-- ===================== COLUNA HABILIDADE ===================== -->
+<div class="coluna" id="habilidade">
+  <div class="titulo">HABILIDADE</div>
+</div>
+
+<!-- ===================== POPUPS (CURA / SPRAY / PLACA) ===================== -->
+<div class="overlay" id="ovPlaca"><div class="popup">
+  <h2>Placa Balística</h2>
+  <p><b>+20 Blindagem</b> (até 2 placas)</p>
+  <p><b>+10 Armadura</b> por placa</p>
+  <p><b>+4% Resistência</b> por placa</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarPlaca()">Usar</button>
+    <button class="fechar" onclick="fechar('ovPlaca')">Fechar</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="ovCura"><div class="popup">
+  <h2>Cura Avançada</h2>
+  <p>Recupera <b>30 de vida</b> e regenera <b>20% da vida máxima</b> a cada 10s (por 30s).</p>
+  <p>Remove <b>Sangramento</b>, <b>Veneno</b> e <b>Lesão</b>.</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarCura()">Usar</button>
+    <button class="fechar" onclick="fechar('ovCura')">Fechar</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="ovSpray"><div class="popup">
+  <h2>Quick Spray</h2>
+  <p>Cura <b>20</b> e regenera <b>10% da vida máxima</b> a cada 15s (por 45s).</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarSpray()">Usar</button>
+    <button class="fechar" onclick="fechar('ovSpray')">Fechar</button>
+  </div>
+</div></div>
+
+<!-- ===================== POPUPS (ESTIMULANTES) ===================== -->
+<div class="overlay" id="ovAdrena"><div class="popup" style="border-color:#00fff2;color:#00fff2;">
+  <h2>AdrenaBoost</h2>
+  <p>+5 em Destreza (todas as perícias de Destreza)</p>
+  <p>+3 em Tolerância à Dor • +5 em Armas Brancas</p>
+  <p>Duração: 40s • Intervalo: 20s</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarStim('adrena')">Usar</button>
+    <button class="fechar" onclick="fechar('ovAdrena')">Fechar</button>
+  </div>
+  <div id="cdAdrena" class="cooldown"></div>
+</div></div>
+
+<div class="overlay" id="ovIron"><div class="popup" style="border-color:#ff3333;color:#ff3333;">
+  <h2>Iron Pulse</h2>
+  <p>+5 em Constituição (todas as perícias de Constituição)</p>
+  <p>+5 em Atletismo • +2 em Armas Brancas</p>
+  <p><b>Imune</b> a S/V/L enquanto ativo</p>
+  <p>Duração: 40s • Intervalo: 20s</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarStim('iron')">Usar</button>
+    <button class="fechar" onclick="fechar('ovIron')">Fechar</button>
+  </div>
+  <div id="cdIron" class="cooldown"></div>
+</div></div>
+
+<div class="overlay" id="ovMid"><div class="popup" style="border-color:#00ff55;color:#00ff55;">
+  <h2>MidSpark</h2>
+  <p>+5 em Inteligência (todas as perícias de Inteligência)</p>
+  <p>+5 em Percepção • +3 em Reflexo • +3 em Contra-ataque</p>
+  <p>Duração: 40s • Intervalo: 20s</p>
+  <div class="botoes">
+    <button class="usar" onclick="usarStim('mid')">Usar</button>
+    <button class="fechar" onclick="fechar('ovMid')">Fechar</button>
+  </div>
+  <div id="cdMid" class="cooldown"></div>
+</div></div>
+
+<!-- ===================== POPUP (ATRIBUTOS) ===================== -->
+<div class="overlay" id="ovAtributos"><div class="popup">
+  <h2>Atributos</h2>
+  <p>Edite os pontos de atributo (1 a 20).<br>O modificador é calculado automaticamente.</p>
+  <div id="formAtributos">
+    <label>Força
+      <input type="number" id="inpFor" min="1" max="20">
+    </label>
+    <label>Constituição
+      <input type="number" id="inpCon" min="1" max="20">
+    </label>
+    <label>Destreza
+      <input type="number" id="inpDes" min="1" max="20">
+    </label>
+    <label>Inteligência
+      <input type="number" id="inpInt" min="1" max="20">
+    </label>
+    <label>Psicológico
+      <input type="number" id="inpPsi" min="1" max="20">
+    </label>
+  </div>
+  <div class="botoes">
+    <button class="usar" onclick="aplicarAtributos()">Aplicar</button>
+    <button class="fechar" onclick="fechar('ovAtributos')">Fechar</button>
+  </div>
+</div></div>
+
+<script>
+/* ===================== UTIL POPUPS ===================== */
+function abrir(id){document.getElementById(id).classList.add('ativo')}
+function fechar(id){document.getElementById(id).classList.remove('ativo')}
+
+/* ===================== ARMA / MUNIÇÃO ===================== */
+let armaAtual="fuzil"; // "fuzil" | "pistola"
+let tipoMunicao=1;     // 1 base, 2 antiblindagem (só fuzil)
+const fuzilNormal={atual:30,reserva:90,max:30};
+const fuzilAB={atual:25,reserva:75,max:25};
+const pistola={atual:12,reserva:36,max:12};
+
+const contFuzilN=document.getElementById("contadorFuzilNormal");
+const contFuzilAB=document.getElementById("contadorFuzilAB");
+const contPistola=document.getElementById("contadorPistola");
+const iconeTipo=document.getElementById("iconeTipo");
+const gridFuzil=document.getElementById("gridFuzil");
+const fuzilImg=document.getElementById("fuzilImg");
+const pistolaImg=document.getElementById("pistolaImg");
+const botaoTrocaImg=document.getElementById("imgTroca");
+const nomeMunicao=document.getElementById("nomeMunicao");
+
+function atualizarContadores(){
+  contFuzilN.textContent=`${fuzilNormal.atual} / ${fuzilNormal.reserva}`;
+  contFuzilAB.textContent=`${fuzilAB.atual} / ${fuzilAB.reserva}`;
+  contPistola.textContent=`${pistola.atual} / ${pistola.reserva}`;
+}
+function atualizarRotuloMunicao(){
+  if(armaAtual==="pistola"||tipoMunicao===1){
+    nomeMunicao.textContent="MUNIÇÃO BASE";
+    nomeMunicao.classList.remove("laranja");
+  }else{
+    nomeMunicao.textContent="ANTIBLINDAGEM";
+    nomeMunicao.classList.add("laranja");
+  }
+}
+function trocarMunicao(){
+  if(armaAtual==="pistola")return;
+  tipoMunicao=(tipoMunicao===1?2:1);
+  contFuzilN.classList.toggle("inativo",tipoMunicao!==1);
+  contFuzilAB.classList.toggle("inativo",tipoMunicao!==2);
+  if(tipoMunicao===1){
+    iconeTipo.src="https://i.imgur.com/yBeSBbD.png";
+    iconeTipo.classList.remove("icone-laranja");iconeTipo.classList.add("icone-azul");
+    gridFuzil.classList.remove("grid-laranja");gridFuzil.classList.add("grid-azul");
+  }else{
+    iconeTipo.src="https://i.imgur.com/CUuWQ12.png";
+    iconeTipo.classList.remove("icone-azul");iconeTipo.classList.add("icone-laranja");
+    gridFuzil.classList.remove("grid-azul");gridFuzil.classList.add("grid-laranja");
+  }
+  atualizarRotuloMunicao();
+}
+function trocarArma(){
+  botaoTrocaImg.classList.add('animar');
+  setTimeout(()=>botaoTrocaImg.classList.remove('animar'),420);
+
+  if(armaAtual==="fuzil"){
+    armaAtual="pistola";
+    fuzilImg.style.opacity="0";
+    pistolaImg.classList.add("visivel");
+    tipoMunicao=1;
+    iconeTipo.src="https://i.imgur.com/yBeSBbD.png";
+    iconeTipo.classList.remove("icone-laranja");iconeTipo.classList.add("icone-azul");
+    contFuzilN.classList.add("inativo");
+    contFuzilAB.classList.add("inativo");
+    contPistola.classList.remove("inativo");
+    gridFuzil.classList.remove("grid-laranja");gridFuzil.classList.add("grid-azul");
+  }else{
+    armaAtual="fuzil";
+    fuzilImg.style.opacity="1";
+    pistolaImg.classList.remove("visivel");
+    contPistola.classList.add("inativo");
+    contFuzilN.classList.remove("inativo");
+  }
+  atualizarContadores();
+  atualizarCaixas();
+  atualizarRotuloMunicao();
+  aplicarBonusDaArma(); // atualiza perícias com nova arma
+}
+function atirar(qtd){
+  if(armaAtual==="pistola"){
+    pistola.atual=Math.max(0,pistola.atual-1);
+  }else{
+    if(tipoMunicao===1)fuzilNormal.atual=Math.max(0,fuzilNormal.atual-qtd);
+    else fuzilAB.atual=Math.max(0,fuzilAB.atual-qtd);
+  }
+  atualizarContadores();
+}
+function recarregar(){
+  let arma=(armaAtual==="pistola")?pistola:(tipoMunicao===1?fuzilNormal:fuzilAB);
+  const nec=arma.max-arma.atual, transf=Math.min(nec,arma.reserva);
+  arma.atual+=transf;
+  arma.reserva-=transf;
+  atualizarContadores();
+}
+
+/* Caixas tiro */
+const caixas=Array.from(document.querySelectorAll('.caixa'));
+function atualizarCaixas(){
+  if(armaAtual==="fuzil"){
+    caixas.forEach((el,i)=>{
+      el.classList.remove('bloqueado');
+      el.classList.add('ativo');
+      el.textContent=(i+1);
+      el.dataset.enabled="1";
+    });
+  }else{
+    caixas.forEach((el,i)=>{
+      if(i===0){
+        el.classList.remove('bloqueado');
+        el.classList.add('ativo');
+        el.textContent='1';
+        el.dataset.enabled="1";
+      }else{
+        el.classList.remove('ativo');
+        el.classList.add('bloqueado');
+        el.innerHTML='<span class="x">X</span>';
+        el.dataset.enabled="0";
+      }
+    });
+  }
+}
+caixas.forEach(el=>el.addEventListener('click',()=>{
+  const idx=Number(el.dataset.index);
+  if(el.dataset.enabled!=="1")return;
+  if(armaAtual==="pistola")atirar(1);
+  else atirar(idx);
+}));
+
+/* ===================== GRANADAS ===================== */
+const tiposGranada=[
+  {nome:"GRANADA",img:"https://i.imgur.com/YNr8ppm.png"},
+  {nome:"FLASHBANG",img:"https://i.imgur.com/7uXVJTP.png"},
+  {nome:"SMOKE",img:"https://i.imgur.com/6xn34P5.png"}
+];
+const escalaGranada=[1,1,1];
+let idxGranada=0;
+const estoqueGranadas=[3,3,3];
+const nomeGranada=document.getElementById("nomeGranada");
+const iconeGranada=document.getElementById("iconeGranada");
+const contadorGranada=document.getElementById("contadorGranada");
+function syncGranadaUI(){
+  nomeGranada.textContent=tiposGranada[idxGranada].nome;
+  iconeGranada.src=tiposGranada[idxGranada].img;
+  iconeGranada.style.transform=`scale(${escalaGranada[idxGranada]})`;
+  contadorGranada.textContent=String(estoqueGranadas[idxGranada]);
+}
+function trocarGranada(){
+  idxGranada=(idxGranada+1)%tiposGranada.length;
+  syncGranadaUI();
+}
+function usarGranada(){
+  if(estoqueGranadas[idxGranada]>0){
+    estoqueGranadas[idxGranada]-=1;
+    contadorGranada.textContent=String(estoqueGranadas[idxGranada]);
+  }
+}
+
+/* ===================== VIDA / DOTs / LESÃO ===================== */
+const VIDA_MAX=250, BASE_ARMADURA=50, BASE_RESIST=5;
+let vidaMax=VIDA_MAX, vidaAtual=VIDA_MAX, armadura=BASE_ARMADURA, resistencia=BASE_RESIST, sanidade=30;
+
+const PLACA_VALOR=20, PLACA_ARMADURA=10, PLACA_RESIST=4, PLACA_LIMITE=2;
+let placas=[];
+
+const vidaBarra=document.getElementById('vidaBarra');
+const vidaExtra=document.getElementById('vidaExtra');
+const vidaCont=document.getElementById('vidaContador');
+const moldura=document.getElementById('vidaFrame');
+const iconSang=document.getElementById('iconSangramento');
+const iconVen=document.getElementById('iconVeneno');
+const iconLes=document.getElementById('iconLesao');
+const placaIcon1=document.getElementById('placaIcon1');
+const placaIcon2=document.getElementById('placaIcon2');
+
+function atualizarHUD(){
+  const blind=placas.reduce((a,b)=>a+b,0);
+  const basePct=Math.max((vidaAtual/vidaMax)*100,0);
+  vidaBarra.style.width=basePct+"%";
+  const extraPct=Math.min((blind/vidaMax)*100,100-basePct);
+  vidaExtra.style.width=extraPct+"%";
+  vidaExtra.style.left=basePct+"%";
+  vidaCont.textContent=`HP: ${Math.ceil(vidaAtual)} / ${vidaMax}`;
+  document.getElementById("valorArmadura").textContent=armadura;
+  document.getElementById("valorResistencia").textContent=resistencia.toFixed(1)+"%";
+  document.getElementById("valorSanidade").textContent=sanidade;
+  placaIcon1.classList.toggle('ativo',placas.length>=1);
+  placaIcon2.classList.toggle('ativo',placas.length>=2);
+}
+
+/* Debuffs timers */
+let sangramentoTimer=null, sangTicks=0;
+let venenoTimer=null, venTicks=0;
+let lesaoTimer=null, lesaoAtivo=false;
+
+/* ===================== ATRIBUTOS (VALOR + MODIFICADOR) ===================== */
+const attrValues={
+  "FORÇA":10,
+  "CONSTITUIÇÃO":10,
+  "DESTREZA":10,
+  "INTELIGÊNCIA":10,
+  "PSICOLÓGICO":10
+};
+
+// bônus extras NOS MODS dos atributos (ex: estimulante)
+const attrBonus={
+  "FORÇA":0,
+  "CONSTITUIÇÃO":0,
+  "DESTREZA":0,
+  "INTELIGÊNCIA":0,
+  "PSICOLÓGICO":0
+};
+
+function calcAttrModFromValue(v){
+  if(v<10) return 0;
+  return Math.floor((v-10)/2)+1;
+}
+function getAttrTotalMod(atrib){
+  const base=calcAttrModFromValue(attrValues[atrib]||0);
+  const bonus=attrBonus[atrib]||0;
+  return base+bonus;
+}
+
+/* ===================== PERÍCIAS: base + modificadores dinâmicos ===================== */
+
+// bônus separados: arma e estimulante por perícia
+const skillBonusWeapon={}; // ex: { "Pontaria": +3, "Reflexo": +2 }
+const skillBonusStim={};   // ex: { "Armas Brancas": +5, "Percepção": +5 }
+let lesaoPenalty=0;        // -2 quando lesão
+
+// mapear base de cada skill
+const periciaCols=[...document.querySelectorAll('#pericias .coluna-pericia')];
+const skillsData=[]; // {span, atributo, nome, base}
+periciaCols.forEach(col=>{
+  const atributo=col.dataset.atrib;
+  if(!atributo) return; // pula o box de ATRIBUTOS
+  col.querySelectorAll('li').forEach(li=>{
+    const span=li.querySelector('.mod');
+    const nome=li.textContent.replace(span.textContent,'').trim();
+    // Base da perícia SEM atributo = sempre 1
+    const base=1;
+    span.dataset.base=base;
+    skillsData.push({span,atributo,nome,base});
+  });
+});
+
+function renderSkills(){
+  skillsData.forEach(s=>{
+    const total =
+      s.base +                          // 1 ponto fixo da perícia
+      getAttrTotalMod(s.atributo) +     // modificador total do atributo (pontos + estimulante)
+      (skillBonusWeapon[s.nome]||0) +   // bônus da arma
+      (skillBonusStim[s.nome]||0) +     // bônus específico de estimulante
+      lesaoPenalty;                     // penalidade global de lesão
+
+    s.span.textContent=(total>=0?`+${total}`:String(total));
+  });
+  atualizarAtributosBox();
+}
+
+/* ====== GRID DE ATRIBUTOS (VISUAL) ====== */
+const listaAtributos=document.getElementById('listaAtributos');
+function atualizarAtributosBox(){
+  if(!listaAtributos) return;
+  listaAtributos.innerHTML="";
+  const ordem=["FORÇA","CONSTITUIÇÃO","DESTREZA","INTELIGÊNCIA","PSICOLÓGICO"];
+  ordem.forEach(nome=>{
+    const val=attrValues[nome];
+    const mod=calcAttrModFromValue(val);
+    const li=document.createElement('li');
+    li.textContent=`${nome}: ${val} = `;
+    const span=document.createElement('span');
+    span.className="mod";
+    span.textContent=(mod>=0?`+${mod}`:String(mod));
+    li.appendChild(span);
+    listaAtributos.appendChild(li);
+  });
+}
+
+function abrirPopupAtributos(){
+  // preenche os inputs com os valores atuais
+  document.getElementById('inpFor').value=attrValues["FORÇA"];
+  document.getElementById('inpCon').value=attrValues["CONSTITUIÇÃO"];
+  document.getElementById('inpDes').value=attrValues["DESTREZA"];
+  document.getElementById('inpInt').value=attrValues["INTELIGÊNCIA"];
+  document.getElementById('inpPsi').value=attrValues["PSICOLÓGICO"];
+  abrir('ovAtributos');
+}
+document.getElementById('boxAtributos').onclick=abrirPopupAtributos;
+
+function aplicarAtributos(){
+  const campos=[
+    {id:'inpFor',chave:'FORÇA'},
+    {id:'inpCon',chave:'CONSTITUIÇÃO'},
+    {id:'inpDes',chave:'DESTREZA'},
+    {id:'inpInt',chave:'INTELIGÊNCIA'},
+    {id:'inpPsi',chave:'PSICOLÓGICO'}
+  ];
+  campos.forEach(c=>{
+    const el=document.getElementById(c.id);
+    let v=parseInt(el.value,10);
+    if(isNaN(v)) v=10;
+    if(v<1)v=1;
+    if(v>20)v=20;
+    attrValues[c.chave]=v;
+    el.value=v;
+  });
+  atualizarAtributosBox();
+  renderSkills(); // recalcula tudo com os novos pontos
+  fechar('ovAtributos');
+}
+
+/* ===================== SISTEMA DE ARMAS → PERÍCIAS ===================== */
+const weaponSkillMap={
+  "fuzil":{
+    "Pontaria":3,
+    "Reflexo":2,
+    "Contra-ataque":1
+  },
+  "pistola":{
+    "Pontaria":2,
+    "Reflexo":1
+  }
+};
+
+function limparBonusArma(){
+  for(const key in skillBonusWeapon) delete skillBonusWeapon[key];
+}
+function aplicarBonusDaArma(){
+  limparBonusArma();
+  const mapa=weaponSkillMap[armaAtual];
+  if(mapa){
+    for(const skill in mapa){
+      skillBonusWeapon[skill]=mapa[skill];
+    }
+  }
+  renderSkills();
+}
+
+/* ===================== ESTIMULANTES ===================== */
+let activeStim=null; // 'adrena' | 'iron' | 'mid' | null
+let stimEndAt=0;     // timestamp fim do efeito
+let globalLockUntil=0; // intervalo global 20s depois que efeito termina
+const STIM_DURATION=40000; // 40s
+const STIM_INTERVAL=20000; // 20s (global)
+
+function now(){return Date.now()}
+function stimLocked(){
+  if(activeStim) return "Já existe estimulante ativo.";
+  if(now()<globalLockUntil) return "Aguardando intervalo global.";
+  return null;
+}
+
+function setStimCooldownUI(idEl, endTs){
+  const el=document.getElementById(idEl);
+  if(!el) return;
+  function tick(){
+    const rem=Math.max(0,endTs-now());
+    if(rem<=0){el.textContent="";clearInterval(t);}
+    else el.textContent=`Restante: ${(rem/1000).toFixed(0)}s`;
+  }
+  tick();
+  const t=setInterval(tick,500);
+}
+
+function usarStim(kind){
+  const lockMsg=stimLocked();
+  if(lockMsg){alert(lockMsg);return;}
+
+  // limpar bônus anteriores de atributo e de skill (arma fica)
+  Object.keys(attrBonus).forEach(k=>attrBonus[k]=0);
+  for(const k in skillBonusStim) delete skillBonusStim[k];
+
+  if(kind==='adrena'){
+    // +5 em Destreza (todas perícias de Destreza) via attrBonus
+    attrBonus["DESTREZA"]+=5;
+    // bônus específicos extras
+    skillBonusStim["Tolerância à Dor"]=(skillBonusStim["Tolerância à Dor"]||0)+3;
+    skillBonusStim["Armas Brancas"]   =(skillBonusStim["Armas Brancas"]||0)+5;
+    fechar('ovAdrena');
+    setStimCooldownUI('cdAdrena',now()+STIM_DURATION);
+  }else if(kind==='iron'){
+    attrBonus["CONSTITUIÇÃO"]+=5;
+    skillBonusStim["Atletismo"]=(skillBonusStim["Atletismo"]||0)+5;
+    skillBonusStim["Armas Brancas"]=(skillBonusStim["Armas Brancas"]||0)+2;
+    fechar('ovIron');
+    setStimCooldownUI('cdIron',now()+STIM_DURATION);
+  }else if(kind==='mid'){
+    attrBonus["INTELIGÊNCIA"]+=5;
+    skillBonusStim["Percepção"]    =(skillBonusStim["Percepção"]||0)+5;
+    skillBonusStim["Reflexo"]      =(skillBonusStim["Reflexo"]||0)+3;
+    skillBonusStim["Contra-ataque"]=(skillBonusStim["Contra-ataque"]||0)+3;
+    fechar('ovMid');
+    setStimCooldownUI('cdMid',now()+STIM_DURATION);
+  }
+
+  activeStim=kind;
+  stimEndAt=now()+STIM_DURATION;
+  renderSkills();
+
+  const endTimer=setInterval(()=>{
+    if(now()>=stimEndAt){
+      clearInterval(endTimer);
+      Object.keys(attrBonus).forEach(k=>attrBonus[k]=0);
+      for(const k in skillBonusStim) delete skillBonusStim[k];
+      renderSkills();
+      activeStim=null;
+      globalLockUntil=now()+STIM_INTERVAL;
+    }
+  },250);
+}
+
+/* Grid Estimulantes – UI seletor */
+(function initStimGrid(){
+  const seletores=document.querySelectorAll('#item-estims .seletor');
+  const imgs=[document.getElementById('stim1'),document.getElementById('stim2'),document.getElementById('stim3')];
+  let ativo=0;
+  function sync(){
+    imgs.forEach((im,i)=>{
+      im.classList.toggle('ativo',i===ativo);
+      im.style.pointerEvents=(i===ativo)?'auto':'none';
+    });
+  }
+  sync();
+  seletores.forEach(btn=>btn.addEventListener('click',()=>{
+    ativo=Number(btn.dataset.img)-1;
+    seletores.forEach(b=>b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    sync();
+  }));
+  imgs[0].onclick=()=>abrir('ovAdrena');
+  imgs[1].onclick=()=>abrir('ovIron');
+  imgs[2].onclick=()=>abrir('ovMid');
+})();
+
+/* ===================== DANO / PREFIXOS (S/V/L) ===================== */
+function aplicarDano(){
+  const input=document.getElementById("danoInput");
+  let raw=input.value.trim().toUpperCase();
+  if(!raw)return;
+
+  let tipo=null, danoBruto=0;
+  if(raw.startsWith("S")){tipo="S";danoBruto=parseFloat(raw.slice(1))}
+  else if(raw.startsWith("V")){tipo="V";danoBruto=parseFloat(raw.slice(1))}
+  else if(raw.startsWith("L")){tipo="L";danoBruto=parseFloat(raw.slice(1))}
+  else{danoBruto=parseFloat(raw)}
+
+  if(isNaN(danoBruto)||danoBruto<=0){input.value="";return;}
+
+  let danoPos=danoBruto*(1-resistencia/100);
+  danoPos=Math.max(danoPos-armadura,0);
+
+  let restante=danoPos;
+  for(let i=placas.length-1;i>=0 && restante>0;i--){
+    if(placas[i]>0){
+      const hit=Math.min(placas[i],restante);
+      placas[i]-=hit;
+      restante-=hit;
+      if(placas[i]<=0){
+        placas.splice(i,1);
+        armadura-=PLACA_ARMADURA;
+        resistencia-=PLACA_RESIST;
+      }
+    }
+  }
+  if(restante>0)vidaAtual=Math.max(0,vidaAtual-restante);
+
+  if(activeStim!=='iron'){
+    if(tipo==="S")ativarSangramento();
+    if(tipo==="V")ativarVeneno();
+    if(tipo==="L")ativarLesao();
+  }
+
+  atualizarHUD();
+  input.value="";
+}
+
+function ativarSangramento(){
+  if(sangramentoTimer)clearInterval(sangramentoTimer);
+  moldura.classList.add("efeito-vermelho");
+  iconSang.classList.add("ativo");
+  sangTicks=0;
+  sangramentoTimer=setInterval(()=>{
+    sangTicks++;
+    vidaAtual=Math.max(0,vidaAtual-5);
+    atualizarHUD();
+    if(sangTicks>=5){
+      clearInterval(sangramentoTimer);
+      sangramentoTimer=null;
+      moldura.classList.remove("efeito-vermelho");
+      iconSang.classList.remove("ativo");
+    }
+  },3000);
+}
+function ativarVeneno(){
+  if(venenoTimer)clearInterval(venenoTimer);
+  moldura.classList.add("efeito-verde");
+  iconVen.classList.add("ativo");
+  venTicks=0;
+  venenoTimer=setInterval(()=>{
+    venTicks++;
+    vidaAtual=Math.max(0,vidaAtual-3);
+    atualizarHUD();
+    if(venTicks>=6){
+      clearInterval(venenoTimer);
+      venenoTimer=null;
+      moldura.classList.remove("efeito-verde");
+      iconVen.classList.remove("ativo");
+    }
+  },3000);
+}
+function ativarLesao(){
+  lesaoPenalty=-2;
+  lesaoAtivo=true;
+  iconLes.classList.add('ativo');
+  renderSkills();
+  if(lesaoTimer)clearTimeout(lesaoTimer);
+  lesaoTimer=setTimeout(()=>{
+    lesaoPenalty=0;
+    lesaoAtivo=false;
+    iconLes.classList.remove('ativo');
+    renderSkills();
+  },40000);
+}
+
+/* ===================== SANIDADE / ITENS (Cura/Spray/Placa) ===================== */
+function alterarSanidade(v){
+  sanidade=Math.min(30,Math.max(0,sanidade+v));
+  atualizarHUD();
+}
+
+document.getElementById('grid-placa').onclick=()=>abrir('ovPlaca');
+document.getElementById('grid-cura').onclick =()=>abrir('ovCura');
+document.getElementById('grid-spray').onclick=()=>abrir('ovSpray');
+
+function usarPlaca(){
+  if(placas.length>=PLACA_LIMITE)return;
+  placas.push(PLACA_VALOR);
+  armadura+=PLACA_ARMADURA;
+  resistencia+=PLACA_RESIST;
+  atualizarHUD();
+  fechar('ovPlaca');
+}
+function usarCura(){
+  vidaAtual=Math.min(vidaAtual+30,vidaMax);
+  atualizarHUD();
+  let ticks=0;
+  const loop=setInterval(()=>{
+    vidaAtual=Math.min(vidaAtual+vidaMax*0.2,vidaMax);
+    atualizarHUD();
+    if(++ticks>=3)clearInterval(loop);
+  },10000);
+
+  if(sangramentoTimer){clearInterval(sangramentoTimer);sangramentoTimer=null;iconSang.classList.remove('ativo');moldura.classList.remove('efeito-vermelho')}
+  if(venenoTimer){clearInterval(venenoTimer);venenoTimer=null;iconVen.classList.remove('ativo');moldura.classList.remove('efeito-verde')}
+  if(lesaoTimer){clearTimeout(lesaoTimer);lesaoTimer=null;}
+  lesaoPenalty=0;
+  lesaoAtivo=false;
+  iconLes.classList.remove('ativo');
+  renderSkills();
+
+  fechar('ovCura');
+}
+function usarSpray(){
+  vidaAtual=Math.min(vidaAtual+20,vidaMax);
+  atualizarHUD();
+  let ticks=0;
+  const loop=setInterval(()=>{
+    vidaAtual=Math.min(vidaAtual+vidaMax*0.1,vidaMax);
+    atualizarHUD();
+    if(++ticks>=3)clearInterval(loop);
+  },15000);
+  fechar('ovSpray');
+}
+
+/* ===================== STARTUP ===================== */
+document.getElementById('btnDano').addEventListener('click',aplicarDano);
+syncGranadaUI();
+atualizarContadores();
+atualizarCaixas();
+atualizarRotuloMunicao();
+atualizarHUD();
+atualizarAtributosBox();
+aplicarBonusDaArma(); // arma inicial: fuzil
+renderSkills();
+</script>
+</body>
+</html>
